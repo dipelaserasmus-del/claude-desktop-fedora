@@ -84,7 +84,7 @@ fi
 %dir %{_sharedstatedir}/%{name}
 
 %changelog
-* Wed Nov 18 2026 Henrik Berglund <16418668+dewzor@users.noreply.github.com> - 1.0.4-1
+* Wed Nov 18 2026 Sakis Ag <th_agorastos@hotmail.com> - 1.0.4-1
 - Fedora 45: install the unsigned local build with localpkg_gpgcheck off for
   that transaction only, so the RPM 6.1 signature enforcement and an admin's
   localpkg_gpgcheck=True do not stop daily updates
