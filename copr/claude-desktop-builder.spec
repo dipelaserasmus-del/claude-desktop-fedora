@@ -1,5 +1,5 @@
 Name:           claude-desktop-builder
-Version:        1.0.3
+Version:        1.0.4
 Release:        1%{?dist}
 Summary:        Builds and updates Claude Desktop for Fedora from the official upstream build
 
@@ -84,6 +84,14 @@ fi
 %dir %{_sharedstatedir}/%{name}
 
 %changelog
+* Wed Nov 18 2026 Henrik Berglund <16418668+dewzor@users.noreply.github.com> - 1.0.4-1
+- Fedora 45: install the unsigned local build with localpkg_gpgcheck off for
+  that transaction only, so the RPM 6.1 signature enforcement and an admin's
+  localpkg_gpgcheck=True do not stop daily updates
+- Fedora 45: the built claude-desktop recommends any Secret Service provider
+  (oo7-daemon, gnome-keyring or kf6-kwallet) instead of pulling gnome-keyring
+  in next to oo7
+
 * Thu Oct 22 2026 Anıl Sürmeli <126188687+anilsrml@users.noreply.github.com> - 1.0.3-1
 - Run build-official.sh under C.UTF-8 so its checks pass in every locale;
   locales with Turkish-style i/I failed the Filename check and legacy CJK

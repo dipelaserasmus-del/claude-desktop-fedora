@@ -1,5 +1,17 @@
 # Changelog
 
+## v9.4 (2026-11-18)
+
+**Fedora 45.**
+
+- Fedora 45 ships RPM 6.1, which refuses unsigned packages in `rpm` itself. The locally built RPM is unsigned (its trust comes from Anthropic's signed apt index), so the README now says to install with `dnf`, which still accepts local files and only warns. `build-official.sh` prints the same advice after a build, and the README explains how to sign builds with `rpm-setup-autosign` if you want `rpm -i` to work too.
+- `claude-desktop-update` installs with `--setopt=localpkg_gpgcheck=0` for that one transaction, so the daily update keeps working if the admin turned that check on. Unlike `--nogpgcheck`, repository dependencies are still checked.
+- Fedora 45 replaced GNOME Keyring with oo7 as the Secret Service provider. The RPM recommended `gnome-keyring`, which pulled a second, competing provider onto stock Fedora 45. It now recommends `(oo7-daemon or gnome-keyring or kf6-kwallet)`.
+- The spec now explains why it has no `Vendor:` tag: DNF5 on Fedora 45 won't switch an installed package to a different vendor, so adding one would block upgrades from earlier builds.
+- Every runtime dependency was checked against the Fedora 45 package set; none were renamed or dropped.
+- README retargeted at Fedora 45, with a Fedora 45 notes section and new troubleshooting entries.
+- `claude-desktop-builder` 1.0.4 on COPR.
+
 ## v9.3 (2026-10-22)
 
 **Your locale no longer matters.** Reported and fixed by [@anilsrml](https://github.com/anilsrml) in [#7](https://github.com/dewzor/claude-desktop-fedora/issues/7) and [#8](https://github.com/dewzor/claude-desktop-fedora/pull/8).

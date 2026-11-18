@@ -141,13 +141,22 @@ rpm_file="$(find "$OUT_DIR" -maxdepth 1 -type f -name 'claude-desktop-*.rpm' -pr
 
 log "installing $(basename "$rpm_file")"
 nevra="$(rpm -qp --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}' "$rpm_file")"
+# The RPM was built a moment ago from a .deb whose SHA256 build-official.sh
+# checked against Anthropic's signed apt index, so that signature is what
+# vouches for it. The RPM itself is unsigned (unless rpmbuild autosigning is
+# set up). Fedora 45 makes rpm refuse unsigned packages; dnf still installs a
+# local file as long as localpkg_gpgcheck is off, which is the default. Turn
+# it off for this one transaction in case the admin turned it on. Unlike
+# --nogpgcheck, this leaves the signature check on for any dependencies dnf
+# pulls in from repositories.
+DNF_OPTS=(-y --setopt=localpkg_gpgcheck=0)
 if rpm -q "$nevra" >/dev/null 2>&1; then
     # Same name, version and release already installed: dnf install would be
     # a no-op, so replace the files explicitly.
-    dnf reinstall -y "$rpm_file" || die "dnf could not reinstall $rpm_file"
+    dnf reinstall "${DNF_OPTS[@]}" "$rpm_file" || die "dnf could not reinstall $rpm_file"
 else
     # Obsoletes in the built package means dnf replaces the old one in place.
-    dnf install -y "$rpm_file" || die "dnf could not install $rpm_file"
+    dnf install "${DNF_OPTS[@]}" "$rpm_file" || die "dnf could not install $rpm_file"
 fi
 rpm -q "$nevra" >/dev/null 2>&1 || die "$nevra is not installed after dnf finished"
 

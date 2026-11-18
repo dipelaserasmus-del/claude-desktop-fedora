@@ -1,12 +1,12 @@
-# Claude Desktop for Fedora 44
+# Claude Desktop for Fedora 45
 
-Install **Claude Desktop on Fedora 44** as a native RPM, built from Anthropic's **official Linux x86_64 build**. Unmodified upstream payload, Chromium sandbox on, Claude Code and Cowork working. Tested on Fedora 44 with KDE Plasma (Wayland) and GNOME (Wayland); should work on Fedora 43 and later.
+Install **Claude Desktop on Fedora 45** as a native RPM, built from Anthropic's **official Linux x86_64 build**. Unmodified upstream payload, Chromium sandbox on, Claude Code and Cowork working. Supports Fedora 45 (GNOME 51, KDE Plasma 6.7, RPM 6.1); tested on Fedora 44 with KDE Plasma (Wayland) and GNOME (Wayland); should work on Fedora 43 and later. See [Fedora 45 notes](#fedora-45-notes) for what changed.
 
 **TL;DR:** `./build-official.sh && sudo dnf install build/official/claude-desktop-*.rpm`
 
 > Unofficial packaging. Anthropic ships the app; this repo only rewraps it for `dnf`. If you hit a packaging bug, open an issue here, not with Anthropic.
 
-## Install Claude Desktop on Fedora 44
+## Install Claude Desktop on Fedora 45
 
 ```bash
 sudo dnf install rpm-build binutils file xz curl gnupg2
@@ -16,6 +16,8 @@ cd claude-desktop-fedora
 ./build-official.sh
 sudo dnf install build/official/claude-desktop-*.rpm
 ```
+
+Install with `dnf`, not `rpm -i`: Fedora 45 makes `rpm` refuse unsigned packages, and this one is built on your machine, so it isn't signed. `dnf` installs it and prints `Warning: skipped OpenPGP checks for 1 package from repository: @commandline`. That warning is expected; see [Fedora 45 notes](#fedora-45-notes).
 
 Launch **Claude** from your application menu, or run `claude-desktop`. The launcher also ships two desktop actions: *New Chat* and *New Claude Code Session*.
 
@@ -45,10 +47,12 @@ Removing the package leaves Claude Desktop alone:
 sudo dnf remove claude-desktop-builder
 ```
 
-## What works on Fedora 44
+## What works on Fedora 45
 
 | Feature | Status |
 | --- | --- |
+| Fedora 45, GNOME 51 (Wayland) | Supported |
+| Fedora 45, KDE Plasma 6.7 (Wayland) | Supported |
 | Fedora 44, KDE Plasma (Wayland) | Tested |
 | Fedora 44, GNOME (Wayland) | Tested |
 | Claude Code tab (integrated terminal) | Working |
@@ -114,6 +118,25 @@ sudo dnf install build/official/claude-desktop-*.rpm
 
 The spec carries `Obsoletes: claude-desktop < %{version}-%{release}`, so a newer build cleanly replaces any earlier locally-built package, including ones from the legacy script.
 
+## Fedora 45 notes
+
+Fedora 45 changed three things that touch a locally built package like this one. The scripts already handle them; this is what to expect.
+
+**RPM refuses unsigned packages.** RPM 6.1 in Fedora 45 sets `%_pkgverify_level` to `all`, so `rpm -i` and `rpm -U` reject any package without a signature from a key in the rpm keyring (`package ... does not verify: no signature`). The RPM built here is unsigned: it's made on your machine, and its trust comes from Anthropic's signed apt index, which `build-official.sh` verifies before it builds anything. `dnf install ./file.rpm` still installs local files without an OpenPGP check by default, so the normal install command works and prints a `skipped OpenPGP checks` warning. `claude-desktop-update` also passes `--setopt=localpkg_gpgcheck=0` for its own install, so the daily update keeps working if you've turned that check on. Repository packages pulled in as dependencies are still checked.
+
+If you'd rather have a signed package, set up rpmbuild autosigning once and `build-official.sh` picks it up:
+
+```bash
+/usr/lib/rpm/rpm-setup-autosign          # as your own user; prints the key to import
+sudo rpmkeys --import <the .asc file it printed>
+```
+
+After that, every build is signed and `rpm -i` accepts it too. This applies to manual builds. The daily timer builds as root, so it doesn't use your key.
+
+**oo7 replaced GNOME Keyring.** Fedora 45 uses `oo7-daemon` as its Secret Service provider, which Electron uses to keep you signed in. The RPM used to recommend `gnome-keyring`, which pulled a second, competing provider onto a stock Fedora 45 desktop. It now recommends `(oo7-daemon or gnome-keyring or kf6-kwallet)`, so whichever one you already have satisfies it.
+
+**DNF5 doesn't change vendors.** Fedora 45's DNF5 won't silently switch an installed package to a different `Vendor`. The RPM has never set a vendor and still doesn't, so upgrades from earlier builds replace it in place.
+
 ## MCP setup on Fedora
 
 MCP servers are configured at:
@@ -137,7 +160,7 @@ Earlier versions of this repo (`build-fedora.sh`, still in the tree) rebuilt Cla
 
 Net effect: the app starts, but **the Claude Code tab does not work**. The official Linux build ships both modules as real ELF x86-64 objects, and its native frame is already correct, so none of the old patching is needed.
 
-## Troubleshooting on Fedora 44
+## Troubleshooting on Fedora 45
 
 Exact error strings and what they mean. All of these are fixed by building with `build-official.sh`.
 
@@ -162,6 +185,15 @@ Run `journalctl -u claude-desktop-update.service` to see the last error. Every c
 ### `the signed index expired`
 The index is past its `Valid-Until` date, which Anthropic sets a week after signing it. Either the repository hasn't been re-signed in that time, or your system clock is wrong. Check the clock first.
 
+### `package claude-desktop-... does not verify: no signature`
+You installed with `rpm -i` or `rpm -U` on Fedora 45, which refuses unsigned packages. Use `sudo dnf install build/official/claude-desktop-*.rpm` instead, or set up autosigning as described in [Fedora 45 notes](#fedora-45-notes). Don't fix it with `--nosignature` or by setting `%_pkgverify_level` back to `digest`; that turns the check off for every package.
+
+### `Warning: skipped OpenPGP checks for 1 package from repository: @commandline`
+Expected when you install the unsigned local build with `dnf`. The build was checked against Anthropic's signed apt index before it was packaged.
+
+### Signed out of Claude after upgrading to Fedora 45
+Fedora 45 moved saved secrets from GNOME Keyring or KWallet to oo7 and migrates them on first login. If Claude asks you to sign in again, check that `systemctl --user status oo7-daemon` shows it running, then sign in again so the new token is stored there.
+
 ### `'--ozone-platform=wayland' is not compatible with Vulkan`
 Chromium noise on Wayland sessions. Cosmetic; ignore.
 
@@ -185,7 +217,10 @@ Known limits on current releases: the Claude Code tab doesn't work (see above), 
 
 ## FAQ
 
-### Does Claude Desktop work on Fedora 44?
+### Does Claude Desktop work on Fedora 45?
+Yes. The payload is self-contained, every runtime dependency still exists under the same name in Fedora 45, and the two Fedora 45 changes that touch this package are handled (see [Fedora 45 notes](#fedora-45-notes)). Install with `dnf`, not `rpm -i`.
+
+### Does it work on Fedora 44?
 Yes, tested on Fedora 44 with KDE Plasma (Wayland) and GNOME (Wayland).
 
 ### Does it work on Fedora 43 or older?

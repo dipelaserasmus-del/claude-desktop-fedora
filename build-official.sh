@@ -387,7 +387,12 @@ Requires:       xdg-utils
 Requires:       xdg-desktop-portal
 Recommends:     xdg-desktop-portal-gtk
 Recommends:     libappindicator-gtk3
-Recommends:     gnome-keyring
+# Something has to answer the Secret Service D-Bus API, or Electron's
+# safeStorage cannot keep the sign-in. Fedora 45 replaced GNOME Keyring with
+# oo7-daemon as the default provider; recommending gnome-keyring alone would
+# pull a second, competing provider onto a stock Fedora 45 desktop. Any one
+# already installed satisfies this, so nothing extra lands on 43/44 either.
+Recommends:     (oo7-daemon or gnome-keyring or kf6-kwallet)
 Recommends:     alsa-lib
 Recommends:     ca-certificates
 # From upstream's Recommends: Claude Code / Cowork sandboxing, SSH remotes,
@@ -404,6 +409,9 @@ Suggests:       virtiofsd
 
 # Supersede any earlier locally-built claude-desktop package.
 Obsoletes:      claude-desktop < %{version}-%{release}
+# No Vendor: tag, on purpose. Every earlier build had none, and DNF5 on
+# Fedora 45 refuses to switch an installed package to a different vendor, so
+# adding one now would block the in-place upgrade.
 
 %description
 Claude Desktop for Linux, repackaged for Fedora from Anthropic's official
@@ -419,6 +427,11 @@ setuid chrome-sandbox helper is preserved either way.
 
 Because this package is built locally, it does not auto-update. Re-run the
 build script to pick up a new release.
+
+The package is not OpenPGP-signed unless rpmbuild autosigning is set up.
+Its trust comes from Anthropic's signed apt index, which the build script
+verifies. On Fedora 45, which enforces signatures, install it with dnf
+rather than rpm -i.
 
 %prep
 %setup -q -c -n %{name}-%{version}
@@ -489,5 +502,8 @@ esac
 printf '\n\033[32mBuilt:\033[0m %s\n\n' "$FINAL"
 echo "Install with:"
 echo "    sudo dnf install $FINAL"
+echo
+echo "Use dnf, not rpm -i: Fedora 45 and later refuse unsigned packages in rpm"
+echo "itself. dnf installs it, with a warning that it skipped OpenPGP checks."
 echo
 echo "Then launch 'Claude' from your application menu, or run: claude-desktop"

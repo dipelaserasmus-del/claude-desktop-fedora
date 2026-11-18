@@ -1,4 +1,4 @@
-.TH CLAUDE\-DESKTOP\-UPDATE 1 "2026-10-16" "claude-desktop-builder 1.0.3" "User Commands"
+.TH CLAUDE\-DESKTOP\-UPDATE 1 "2026-11-18" "claude-desktop-builder 1.0.4" "User Commands"
 .SH NAME
 claude\-desktop\-update \- rebuild and install Claude Desktop when upstream ships a new build
 .SH SYNOPSIS
@@ -17,6 +17,13 @@ downloading anything. If a newer build has shipped, it runs
 to fetch Anthropic's official .deb, verify its SHA256 against the signed
 index, repackage the payload as an RPM, and install that RPM with dnf. The built package carries an Obsoletes tag, so an
 older locally built package is replaced in place.
+.PP
+The built RPM is not OpenPGP\-signed; the signed apt index is what vouches
+for it. Fedora 45 and later make rpm refuse unsigned packages, so the install
+goes through dnf with
+.B localpkg_gpgcheck
+turned off for that one transaction. Packages dnf pulls in from repositories
+are still checked.
 .PP
 The command must run as root. It is normally driven by
 .BR claude\-desktop\-update.timer ,
