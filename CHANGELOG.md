@@ -9,6 +9,7 @@
 - Fedora 45 replaced GNOME Keyring with oo7 as the Secret Service provider. The RPM recommended `gnome-keyring`, which pulled a second, competing provider onto stock Fedora 45. It now recommends `(oo7-daemon or gnome-keyring or kf6-kwallet)`.
 - The spec now explains why it has no `Vendor:` tag: DNF5 on Fedora 45 won't switch an installed package to a different vendor, so adding one would block upgrades from earlier builds.
 - Every runtime dependency was checked against the Fedora 45 package set; none were renamed or dropped.
+- `build-official.sh` removes earlier `claude-desktop-*.x86_64.rpm` builds from the output directory. With an old build left there, `sudo dnf install build/official/claude-desktop-*.rpm` matched both and dnf refused the transaction.
 - README retargeted at Fedora 45, with a Fedora 45 notes section and new troubleshooting entries.
 - `claude-desktop-builder` 1.0.4 on COPR.
 

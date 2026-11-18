@@ -101,6 +101,7 @@ Two Debian-specific `postinst` behaviours are intentionally dropped:
 ```
 --deb PATH     Use an already-downloaded .deb instead of fetching it. Skips verification.
 --outdir DIR   Where to write the finished RPM (default: ./build/official).
+               Earlier claude-desktop-*.x86_64.rpm builds there are removed.
 --release N    RPM release field (default: 1).
 --keep         Keep the build tree for inspection.
 --print-latest Verify the signed index, print "VERSION SHA256 FILENAME" for the
@@ -187,6 +188,9 @@ The index is past its `Valid-Until` date, which Anthropic sets a week after sign
 
 ### `package claude-desktop-... does not verify: no signature`
 You installed with `rpm -i` or `rpm -U` on Fedora 45, which refuses unsigned packages. Use `sudo dnf install build/official/claude-desktop-*.rpm` instead, or set up autosigning as described in [Fedora 45 notes](#fedora-45-notes). Don't fix it with `--nosignature` or by setting `%_pkgverify_level` back to `digest`; that turns the check off for every package.
+
+### `cannot install both claude-desktop-X from @commandline and claude-desktop-Y from @commandline`
+`build/official/` still holds an RPM from an earlier build, so `claude-desktop-*.rpm` matched two packages. Install the file the build printed after `Built:`. Builds from v9.4 on remove the earlier RPM from the output directory, so the wildcard matches only the new one.
 
 ### `Warning: skipped OpenPGP checks for 1 package from repository: @commandline`
 Expected when you install the unsigned local build with `dnf`. The build was checked against Anthropic's signed apt index before it was packaged.

@@ -90,6 +90,7 @@ Usage: $0 [options]
 
   --deb PATH     Use an already-downloaded .deb instead of fetching it.
   --outdir DIR   Where to write the finished RPM (default: ./build/official).
+                 Earlier claude-desktop-*.x86_64.rpm builds there are removed.
   --release N    RPM release field (default: 1).
   --keep         Keep the build tree for inspection.
   --print-latest Verify the signed index, print "VERSION SHA256 FILENAME" for
@@ -486,6 +487,17 @@ RPM="$(find "$RB/RPMS" -name '*.rpm' -print -quit)"
 [ -n "$RPM" ] || die "rpmbuild reported success but produced no RPM"
 
 mkdir -p "$OUTDIR"
+# Remove RPMs from earlier builds so the documented
+# `dnf install build/official/claude-desktop-*.rpm` matches only this one.
+# With an old and a new build both on the command line, dnf refuses the
+# transaction ("cannot install both ..."), because the new one obsoletes the
+# old one. Only files named like this script's own output are removed.
+for old in "$OUTDIR"/claude-desktop-*."$ARCH_RPM".rpm; do
+    [ -f "$old" ] || continue
+    [ "$(basename "$old")" = "$(basename "$RPM")" ] && continue
+    info "removing earlier build $(basename "$old")"
+    rm -f -- "$old"
+done
 cp -- "$RPM" "$OUTDIR/"
 FINAL="$OUTDIR/$(basename "$RPM")"
 
